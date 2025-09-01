@@ -1,4 +1,5 @@
 name: default-site
+namespace: default
 replicas: 1
 image: nginx:alpine
 host: default.example.com

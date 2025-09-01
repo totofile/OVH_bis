@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: site1
+  name: site2
   namespace: argocd
 spec:
   project: default
@@ -11,10 +11,10 @@ spec:
     path: charts/website
     helm:
       valueFiles:
-        - sites/site1/values.yaml
+        - sites/site2/values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: site2
   syncPolicy:
     automated:
       prune: true
