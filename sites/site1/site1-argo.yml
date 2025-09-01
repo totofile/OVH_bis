@@ -14,7 +14,7 @@ spec:
         - sites/site1/values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: site1
   syncPolicy:
     automated:
       prune: true
