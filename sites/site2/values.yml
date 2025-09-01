@@ -1,0 +1,4 @@
+name: site2
+replicas: 1
+image: nginx:alpine
+host: site2.example.com

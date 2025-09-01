@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: site1
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ton-compte/sites-repo.git
+    targetRevision: main
+    path: charts/website
+    helm:
+      valueFiles:
+        - sites/site1/values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
