@@ -63,17 +63,12 @@ jobs:
         run: |
           echo ${{ secrets.DOCKER_PASSWORD }} | docker login ${{ secrets.DOCKER_REGISTRY_URL }} -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
       
-      - name: Build Docker Image for ${{ matrix.site }}
+      - name: Build Docker Image for ${{ matrix.site }} (latest only)
         run: |
           cd sites/${{ matrix.site }}
-          docker build -t docker.io/toplu/ovh_bis:${{ matrix.site }}-${{ github.sha }} .
+          docker build -t docker.io/toplu/ovh_bis:${{ matrix.site }}-latest .
           
-      - name: Push Docker Image for ${{ matrix.site }}
+      - name: Push Docker Image for ${{ matrix.site }} (latest)
         run: |
-          docker push docker.io/toplu/ovh_bis:${{ matrix.site }}-${{ github.sha }}
-          
-      - name: Create and Push Latest Tag for ${{ matrix.site }}
-        run: |
-          docker tag docker.io/toplu/ovh_bis:${{ matrix.site }}-${{ github.sha }} docker.io/toplu/ovh_bis:${{ matrix.site }}-latest
           docker push docker.io/toplu/ovh_bis:${{ matrix.site }}-latest
       

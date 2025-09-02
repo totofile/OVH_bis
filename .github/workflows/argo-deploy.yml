@@ -59,12 +59,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Update image tag in values file
-        env:
-          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+      - name: Ensure values use latest tag
         run: |
-          # Update the image tag in the site's values.yml file
-          sed -i "s|image: .*|image: docker.io/toplu/ovh_bis:${{ matrix.site }}-${IMAGE_TAG}|" sites/${{ matrix.site }}/values.yml
+          # Keep values pointing to latest tag for the site
+          sed -i "s|image: .*|image: docker.io/toplu/ovh_bis:${{ matrix.site }}-latest|" sites/${{ matrix.site }}/values.yml
           
       - name: Apply ArgoCD Application for ${{ matrix.site }}
         run: |
