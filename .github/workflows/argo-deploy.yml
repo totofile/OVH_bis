@@ -59,28 +59,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install ArgoCD CLI
-        run: |
-          # Download and install ArgoCD CLI
-          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
-          rm argocd-linux-amd64
-          
-          # Verify installation
-          argocd version --client
-      
-      - name: Login to ArgoCD
-        run: |
-          # Login to ArgoCD server
-          # You need to set these secrets in your GitHub repository:
-          # ARGOCD_SERVER: your ArgoCD server URL (e.g., argocd.example.com)
-          # ARGOCD_USERNAME: ArgoCD username (usually 'admin')
-          # ARGOCD_PASSWORD: ArgoCD password
-          argocd login ${{ secrets.ARGOCD_SERVER }} \
-            --username ${{ secrets.ARGOCD_USERNAME }} \
-            --password ${{ secrets.ARGOCD_PASSWORD }} \
-            --insecure
-      
       - name: Ensure values use latest tag
         run: |
           # Keep values pointing to latest tag for the site
