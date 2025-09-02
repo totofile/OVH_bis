@@ -1,0 +1,79 @@
+name: Docker Build Per Site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'sites/**'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.changes.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Detect changed sites
+        id: changes
+        run: |
+          # Obtenir la liste des fichiers modifiés
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          
+          # Extraire les sites modifiés
+          SITES=()
+          for file in $CHANGED_FILES; do
+            if [[ $file =~ ^sites/([^/]+)/ ]]; then
+              site="${BASH_REMATCH[1]}"
+              if [[ ! " ${SITES[@]} " =~ " ${site} " ]]; then
+                SITES+=("$site")
+              fi
+            fi
+          done
+          
+          # Créer la matrice JSON
+          if [ ${#SITES[@]} -eq 0 ]; then
+            echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
+          else
+            matrix_items=""
+            for site in "${SITES[@]}"; do
+              if [ -n "$matrix_items" ]; then
+                matrix_items+=","
+              fi
+              matrix_items+="{\"site\":\"$site\"}"
+            done
+            echo "matrix={\"include\":[$matrix_items]}" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "Detected changed sites: ${SITES[*]}"
+
+  build:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.matrix != '{"include":[]}'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJSON(needs.detect-changes.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Login to Docker Registry
+        run: |
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login ${{ secrets.DOCKER_REGISTRY_URL }} -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+      
+      - name: Build Docker Image for ${{ matrix.site }}
+        run: |
+          cd sites/${{ matrix.site }}
+          docker build -t ${{ secrets.DOCKER_REGISTRY_URL }}/${{ matrix.site }}:${{ github.sha }} .
+          
+      - name: Push Docker Image for ${{ matrix.site }}
+        run: |
+          docker push ${{ secrets.DOCKER_REGISTRY_URL }}/${{ matrix.site }}:${{ github.sha }}
+          
+      - name: Create and Push Latest Tag for ${{ matrix.site }}
+        run: |
+          docker tag ${{ secrets.DOCKER_REGISTRY_URL }}/${{ matrix.site }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY_URL }}/${{ matrix.site }}:latest
+          docker push ${{ secrets.DOCKER_REGISTRY_URL }}/${{ matrix.site }}:latest
+      
