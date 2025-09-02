@@ -1,5 +1,5 @@
 name: site1
 namespace: site1
 replicas: 1
-image: your-registry/site1:latest
+image: docker.io/toplu/ovh_bis:site1-latest
 host: site1.example.com

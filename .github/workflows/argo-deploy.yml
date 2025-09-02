@@ -61,11 +61,10 @@ jobs:
       
       - name: Update image tag in values file
         env:
-          DOCKER_REGISTRY_URL: ${{ secrets.DOCKER_REGISTRY_URL }}
           IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
         run: |
           # Update the image tag in the site's values.yml file
-          sed -i "s|image: .*|image: ${DOCKER_REGISTRY_URL}/${{ matrix.site }}:${IMAGE_TAG}|" sites/${{ matrix.site }}/values.yml
+          sed -i "s|image: .*|image: docker.io/toplu/ovh_bis:${{ matrix.site }}-${IMAGE_TAG}|" sites/${{ matrix.site }}/values.yml
           
       - name: Apply ArgoCD Application for ${{ matrix.site }}
         run: |

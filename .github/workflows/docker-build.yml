@@ -66,14 +66,14 @@ jobs:
       - name: Build Docker Image for ${{ matrix.site }}
         run: |
           cd sites/${{ matrix.site }}
-          docker build -t ${{ secrets.DOCKER_REGISTRY_URL }}/${{ matrix.site }}:${{ github.sha }} .
+          docker build -t docker.io/toplu/ovh_bis:${{ matrix.site }}-${{ github.sha }} .
           
       - name: Push Docker Image for ${{ matrix.site }}
         run: |
-          docker push ${{ secrets.DOCKER_REGISTRY_URL }}/${{ matrix.site }}:${{ github.sha }}
+          docker push docker.io/toplu/ovh_bis:${{ matrix.site }}-${{ github.sha }}
           
       - name: Create and Push Latest Tag for ${{ matrix.site }}
         run: |
-          docker tag ${{ secrets.DOCKER_REGISTRY_URL }}/${{ matrix.site }}:${{ github.sha }} ${{ secrets.DOCKER_REGISTRY_URL }}/${{ matrix.site }}:latest
-          docker push ${{ secrets.DOCKER_REGISTRY_URL }}/${{ matrix.site }}:latest
+          docker tag docker.io/toplu/ovh_bis:${{ matrix.site }}-${{ github.sha }} docker.io/toplu/ovh_bis:${{ matrix.site }}-latest
+          docker push docker.io/toplu/ovh_bis:${{ matrix.site }}-latest
       
