@@ -6,12 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/ton-compte/sites-repo.git
+    repoURL: https://github.com/totofile/OVH_bis.git
     targetRevision: main
     path: charts/website
     helm:
       valueFiles:
-        - sites/site2/values.yaml
+        - sites/site2/values.yml
   destination:
     server: https://kubernetes.default.svc
     namespace: site2
