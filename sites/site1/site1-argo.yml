@@ -11,7 +11,7 @@ spec:
     path: charts/website
     helm:
       valueFiles:
-        - sites/site1/values.yml
+        - ../../sites/site1/values.yml
   destination:
     server: https://kubernetes.default.svc
     namespace: site1
