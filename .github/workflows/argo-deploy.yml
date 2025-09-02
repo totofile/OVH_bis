@@ -1,0 +1,89 @@
+name: ArgoCD Deploy
+
+on:
+  workflow_run:
+    workflows: ["Docker Build Per Site"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      matrix: ${{ steps.changes.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Detect changed sites
+        id: changes
+        run: |
+          # Get the list of modified files from the triggering workflow
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          
+          # Extract modified sites
+          SITES=()
+          for file in $CHANGED_FILES; do
+            if [[ $file =~ ^sites/([^/]+)/ ]]; then
+              site="${BASH_REMATCH[1]}"
+              if [[ ! " ${SITES[@]} " =~ " ${site} " ]]; then
+                SITES+=("$site")
+              fi
+            fi
+          done
+          
+          # Create JSON matrix
+          if [ ${#SITES[@]} -eq 0 ]; then
+            echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
+          else
+            matrix_items=""
+            for site in "${SITES[@]}"; do
+              if [ -n "$matrix_items" ]; then
+                matrix_items+=","
+              fi
+              matrix_items+="{\"site\":\"$site\"}"
+            done
+            echo "matrix={\"include\":[$matrix_items]}" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "Detected changed sites for deployment: ${SITES[*]}"
+
+  deploy:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.matrix != '{"include":[]}'
+    runs-on: self-hosted
+    strategy:
+      matrix: ${{ fromJSON(needs.detect-changes.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Update image tag in values file
+        env:
+          DOCKER_REGISTRY_URL: ${{ secrets.DOCKER_REGISTRY_URL }}
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          # Update the image tag in the site's values.yml file
+          sed -i "s|image: .*|image: ${DOCKER_REGISTRY_URL}/${{ matrix.site }}:${IMAGE_TAG}|" sites/${{ matrix.site }}/values.yml
+          
+      - name: Apply ArgoCD Application for ${{ matrix.site }}
+        run: |
+          # Apply the ArgoCD application manifest
+          kubectl apply -f sites/${{ matrix.site }}/${{ matrix.site }}-argo.yml
+          
+      - name: Sync ArgoCD Application for ${{ matrix.site }}
+        run: |
+          # Trigger immediate sync of the application
+          argocd app sync ${{ matrix.site }} --timeout 300
+          
+      - name: Wait for deployment completion
+        run: |
+          # Wait for the application to be healthy
+          argocd app wait ${{ matrix.site }} --timeout 600 --health
+          
+      - name: Verify deployment status
+        run: |
+          # Check the status of the deployment
+          kubectl get pods -n ${{ matrix.site }} -l app=${{ matrix.site }}
+          echo "Deployment of ${{ matrix.site }} completed successfully!"
